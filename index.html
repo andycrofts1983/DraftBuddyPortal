@@ -3,42 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DraftBuddy Portal</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { background: #E6C131; padding: 30px; border-radius: 20px; max-width: 600px; margin: 0 auto; }
-        h1 { color: #333; text-align: center; }
-        .status { background: rgba(255,255,255,0.3); padding: 20px; border-radius: 10px; margin: 20px 0; }
-        .error { color: red; }
-        .success { color: green; }
-    </style>
+    <title>DraftBuddy Setup</title>
+    <link rel="icon" type="image/x-icon" href="./assets/images/favicon.ico">
+    <link rel="stylesheet" href="./assets/css/shared.css">
 </head>
 <body>
-    <div class="container">
-        <h1>DraftBuddy Device Management</h1>
-        <div id="status" class="status">
-            <p>Connecting to device...</p>
-        </div>
-        <div id="result"></div>
+    <div class="logo">
+        <img src="./assets/images/logo.png" alt="DraftBuddy Logo">
+        <div id="connection-status" class="status checking">Checking connection...</div>
     </div>
 
+    <div class="container">
+        <h1>Welcome</h1>
+        <div class="nav-grid">
+            <button class="nav-btn" onclick="navigateTo('./upload.html')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                Upload Badge
+            </button>
+            <button class="nav-btn" onclick="navigateTo('./gallery.html')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c1.1 0 2 .9 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                Badge Gallery
+            </button>
+            <button class="nav-btn" onclick="navigateTo('./settings.html')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.82,11.69,4.82,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                Device Settings
+            </button>
+            <button class="nav-btn" onclick="navigateTo('./update.html')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M21,10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-0.1c-2.73,2.71-2.73,7.08,0,9.79s7.15,2.71,9.88,0 C18.32,15.65,19,14.08,19,12.1h2c0,2.08-0.8,4.16-2.34,5.7c-3.27,3.26-8.57,3.26-11.84,0c-3.27-3.26-3.27-8.55,0-11.81 c3.27-3.26,8.57-3.26,11.84,0L21,3.9V10.12z"/></svg>
+                Update Firmware
+            </button>
+        </div>
+        <div class="status" id="page-status">Choose an option to get started</div>
+    </div>
+
+    <script src="./assets/js/main.js"></script>
     <script>
-        // Test mDNS discovery and connection
-        fetch('http://draftbuddy.local/status')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('status').innerHTML = 
-                    '<p class="success">✓ Connected to device successfully!</p>';
-                document.getElementById('result').innerHTML = 
-                    '<h3>Device Status:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
-            })
-            .catch(error => {
-                document.getElementById('status').innerHTML = 
-                    '<p class="error">✗ Cannot connect to device</p>';
-                document.getElementById('result').innerHTML = 
-                    '<p>Make sure your device is connected to the same WiFi network.</p>' +
-                    '<p>Error: ' + error.message + '</p>';
-            });
+        function navigateTo(url) {
+            const status = document.getElementById('page-status');
+            
+            // Check if device is connected before navigating to device-dependent pages
+            if ((url.includes('upload') || url.includes('gallery')) && !device.isConnected) {
+                status.textContent = 'Please ensure your DraftBuddy device is connected';
+                status.style.color = '#dc3545';
+                setTimeout(() => {
+                    status.textContent = 'Choose an option to get started';
+                    status.style.color = '';
+                }, 3000);
+                return;
+            }
+            
+            status.textContent = 'Loading...';
+            
+            if (url.includes('settings') && !device.isConnected) {
+                status.textContent = 'Settings available when device connected';
+                setTimeout(() => {
+                    status.textContent = 'Choose an option to get started';
+                }, 2000);
+                return;
+            }
+            
+            window.location.href = url;
+        }
+
+        // iOS optimization: preload critical resources
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            const preload = document.createElement('link');
+            preload.rel = 'preload';
+            preload.href = './upload.html';
+            preload.as = 'document';
+            document.head.appendChild(preload);
+        }
     </script>
 </body>
 </html>
