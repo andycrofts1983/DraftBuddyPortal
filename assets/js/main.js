@@ -1,13 +1,151 @@
-// main.js - Shared utilities for DraftBuddy interface
+// main.js - DraftBuddy interface with automatic device discovery
 
 class DeviceConnection {
     constructor() {
-        this.baseUrl = 'http://draftbuddy.local';
+        this.baseUrl = null;
+        this.deviceInfo = null;
         this.isConnected = false;
         this.checkInterval = null;
+        this.discoveredDevices = [];
     }
 
+    // NEW: Scan local network for DraftBuddy devices
+    async scanForDevices(progressCallback = null) {
+        console.log('🔍 Scanning for DraftBuddy devices on local network...');
+        
+        this.discoveredDevices = [];
+        
+        // Common home network IP ranges
+        const ranges = [
+            '192.168.1.',   // Most common
+            '192.168.0.',   // Second most common  
+            '192.168.2.',   // Some routers
+            '10.0.0.',      // Some corporate/advanced setups
+            '10.0.1.',      // Alternative
+            '172.16.0.'     // Less common but possible
+        ];
+        
+        const totalIPs = ranges.length * 100;
+        let scannedIPs = 0;
+        
+        // Scan all ranges in parallel for speed
+        const scanPromises = ranges.map(async (range) => {
+            const rangePromises = [];
+            
+            // Scan IPs 100-199 (most likely for DHCP devices)
+            for (let i = 100; i < 200; i++) {
+                const ip = `${range}${i}`;
+                rangePromises.push(this.checkSingleIP(ip, progressCallback, () => {
+                    scannedIPs++;
+                    if (progressCallback) {
+                        const progress = Math.round((scannedIPs / totalIPs) * 100);
+                        progressCallback(progress, scannedIPs, totalIPs);
+                    }
+                }));
+            }
+            
+            await Promise.all(rangePromises);
+        });
+        
+        await Promise.all(scanPromises);
+        
+        console.log(`✓ Scan complete: Found ${this.discoveredDevices.length} DraftBuddy device(s)`);
+        this.discoveredDevices.forEach((device, index) => {
+            console.log(`  Device ${index + 1}: ${device.name} at ${device.ip}`);
+        });
+        
+        return this.discoveredDevices;
+    }
+
+    // Check a single IP for DraftBuddy device
+    async checkSingleIP(ip, progressCallback, countCallback) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 800); // 800ms timeout
+            
+            const response = await fetch(`http://${ip}/status`, {
+                method: 'GET',
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Check if this is a DraftBuddy device
+                if (data.device && (data.device.includes('DraftBuddy') || data.service === 'draftbuddy')) {
+                    const device = {
+                        ip: ip,
+                        name: data.device || 'DraftBuddy Device',
+                        mode: data.mode || 'unknown',
+                        uptime: data.uptime || 0,
+                        wifi_ssid: data.wifi_ssid || 'unknown',
+                        slave_count: data.slave_count || 0,
+                        free_heap: data.free_heap || 0,
+                        found_at: new Date().toLocaleTimeString()
+                    };
+                    
+                    this.discoveredDevices.push(device);
+                    console.log(`✓ Found DraftBuddy at ${ip}: ${device.name}`);
+                }
+            }
+            
+        } catch (error) {
+            // Expected for most IPs - they won't respond
+        } finally {
+            if (countCallback) countCallback();
+        }
+    }
+
+    // NEW: Auto-discover and connect to primary device
+    async autoConnect() {
+        this.updateConnectionStatus('Scanning for devices...', 'scanning');
+        
+        try {
+            const devices = await this.scanForDevices((progress, scanned, total) => {
+                this.updateConnectionStatus(`Scanning network... ${progress}% (${scanned}/${total})`, 'scanning');
+            });
+            
+            if (devices.length === 0) {
+                this.updateConnectionStatus('No DraftBuddy devices found', 'disconnected');
+                this.isConnected = false;
+                return false;
+            }
+            
+            // Connect to the first device found (or prefer masters)
+            const primaryDevice = devices.find(d => d.mode === 'service') || devices[0];
+            this.baseUrl = `http://${primaryDevice.ip}`;
+            this.deviceInfo = primaryDevice;
+            
+            // Test the connection
+            const connected = await this.checkConnection();
+            if (connected) {
+                this.updateConnectionStatus(`Connected to ${primaryDevice.name} (${primaryDevice.ip})`, 'connected');
+                return true;
+            } else {
+                this.updateConnectionStatus('Failed to connect to discovered device', 'disconnected');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('Auto-connect failed:', error);
+            this.updateConnectionStatus('Network scan failed', 'disconnected');
+            this.isConnected = false;
+            return false;
+        }
+    }
+
+    // UPDATED: Enhanced connection checking
     async checkConnection() {
+        if (!this.baseUrl) {
+            // No device discovered yet - try auto-connect
+            return await this.autoConnect();
+        }
+        
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -20,8 +158,19 @@ class DeviceConnection {
             
             clearTimeout(timeoutId);
             this.isConnected = response.ok;
+            
+            if (this.isConnected && !this.deviceInfo) {
+                // Update device info if we don't have it
+                const data = await response.json();
+                this.deviceInfo = {
+                    ip: this.baseUrl.replace('http://', ''),
+                    name: data.device || 'DraftBuddy Device',
+                    mode: data.mode || 'unknown'
+                };
+            }
+            
             this.updateConnectionStatus();
-            return response.ok;
+            return this.isConnected;
         } catch (error) {
             this.isConnected = false;
             this.updateConnectionStatus();
@@ -29,11 +178,23 @@ class DeviceConnection {
         }
     }
 
-    updateConnectionStatus() {
+    // UPDATED: Enhanced status updates
+    updateConnectionStatus(message = null, status = null) {
         const statusElement = document.getElementById('connection-status');
-        if (statusElement) {
-            statusElement.textContent = this.isConnected ? 'Device Connected' : 'Device Offline';
-            statusElement.className = this.isConnected ? 'status connected' : 'status disconnected';
+        if (!statusElement) return;
+        
+        if (message && status) {
+            statusElement.textContent = message;
+            statusElement.className = `status ${status}`;
+        } else {
+            // Default status based on connection state
+            if (this.isConnected && this.deviceInfo) {
+                statusElement.textContent = `Connected to ${this.deviceInfo.name} (${this.deviceInfo.ip})`;
+                statusElement.className = 'status connected';
+            } else {
+                statusElement.textContent = 'Device Offline';
+                statusElement.className = 'status disconnected';
+            }
         }
     }
 
@@ -51,8 +212,9 @@ class DeviceConnection {
         }
     }
 
+    // UPDATED: Use discovered device URL
     async apiCall(endpoint, options = {}) {
-        if (!this.isConnected) {
+        if (!this.isConnected || !this.baseUrl) {
             throw new Error('Device not connected');
         }
 
@@ -77,9 +239,29 @@ class DeviceConnection {
             throw error;
         }
     }
+
+    // NEW: Get info about discovered devices
+    getDiscoveredDevices() {
+        return this.discoveredDevices;
+    }
+
+    // NEW: Switch to a different discovered device
+    async switchToDevice(ip) {
+        const device = this.discoveredDevices.find(d => d.ip === ip);
+        if (!device) return false;
+        
+        this.baseUrl = `http://${ip}`;
+        this.deviceInfo = device;
+        
+        const connected = await this.checkConnection();
+        if (connected) {
+            console.log(`Switched to device: ${device.name} at ${ip}`);
+        }
+        return connected;
+    }
 }
 
-// Global utilities
+// Global utilities (unchanged)
 const device = new DeviceConnection();
 
 function showOverlay(title, subtitle = '') {
@@ -149,7 +331,7 @@ function showSuccess(message, autoReload = true) {
     }
 }
 
-// Convert RGB565 binary data to displayable image
+// Convert RGB565 binary data to displayable image (unchanged)
 async function loadRGB565Image(url, width, height) {
     try {
         const response = await device.apiCall(url.replace('http://draftbuddy.local', ''));
@@ -187,7 +369,7 @@ async function loadRGB565Image(url, width, height) {
     }
 }
 
-// Initialize device connection on page load
+// Initialize device connection on page load (unchanged)
 document.addEventListener('DOMContentLoaded', function() {
     device.startMonitoring();
     
@@ -211,7 +393,7 @@ function addConnectionStatus() {
     }
 }
 
-// Cleanup on page unload
+// Cleanup on page unload (unchanged)
 window.addEventListener('beforeunload', function() {
     device.stopMonitoring();
 });
