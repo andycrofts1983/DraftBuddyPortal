@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DraftBuddy - Upload TapBadge</title>
+    <title>DraftBuddy - Update Firmware</title>
     <link rel="icon" type="image/x-icon" href="./assets/images/favicon.ico">
     <link rel="stylesheet" href="./assets/css/shared.css">
     <style>
@@ -35,19 +34,6 @@
             justify-content: center;
             animation: pulse 2s ease-in-out infinite;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .upload-icon:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-            background: #f8f8f8;
-        }
-
-        .upload-icon:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         @keyframes pulse {
@@ -148,97 +134,30 @@
             transform: translateY(0);
         }
 
-        /* Custom Crop Container */
-        #crop-container {
-            margin: 30px 0;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px var(--shadow);
-            animation: fadeIn 0.4s ease-out;
-            background: rgba(255, 255, 255, 0.3);
-            padding: 20px;
-            display: none;
+        /* Update message */
+        .update-message {
+            text-align: center;
+            animation: scaleIn 0.5s ease-out;
         }
 
-        #crop-container.active {
-            display: block;
-        }
-
-        .crop-viewport {
-            width: 330px;
-            height: 330px;
-            margin: 0 auto;
-            position: relative;
-            border: 6px solid #000;
-            border-radius: 15px;
-            overflow: hidden;
-            background: #000;
-            cursor: move;
-        }
-
-        .crop-image {
-            position: absolute;
-            max-width: none;
-            max-height: none;
-            user-select: none;
-            -webkit-user-select: none;
-            pointer-events: none;
-            left: 0;
-            top: 0;
-        }
-
-        .zoom-controls {
-            margin-top: 20px;
-            background: transparent;
-            padding: 15px;
-            border-radius: 10px;
+        .update-icon {
+            width: 68px;
+            height: 68px;
+            background: var(--dark-gray);
+            border-radius: 50%;
+            margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
+            animation: spin 2s linear infinite;
         }
 
-        .zoom-slider {
-            width: 200px;
-            height: 6px;
-            background: #666666;
-            border-radius: 3px;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .zoom-slider-track {
-            height: 100%;
-            background: var(--dark-gray);
-            border-radius: 3px;
-            transition: width 0.1s ease;
-        }
-
-        .zoom-slider-thumb {
-            width: 38px;
-            height: 38px;
-            background: var(--white);
-            border: 2px solid var(--dark-gray);
-            border-radius: 50%;
-            position: absolute;
-            top: -16px;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .zoom-slider-thumb:hover {
-            transform: scale(1.1);
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            .crop-viewport {
-                width: 250px;
-                height: 250px;
-            }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
-
 <body>
     <div class="logo">
         <a href="./">
@@ -247,42 +166,134 @@
         <div id="connection-status" class="status checking">Checking connection...</div>
     </div>
     
-    <div class="tab-container">
-        <a href="./upload.html" class="tab active">Upload</a>
-        <a href="./gallery.html" class="tab">Gallery</a>
-    </div>
-    
     <div class="container">
-        <h1>Upload Tap Badge Image</h1>
-        <div class="upload-area" id="upload-area">
-            <div class="upload-icon" id="upload-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
-                </svg>
-            </div>
-            <label for="upload" class="file-input-label">Choose Image</label>
-            <input type="file" id="upload" class="file-input" accept="image/*">
-        </div>
-        <div class="file-info" id="file-info">
-            <span id="file-name"></span>
-            <span id="clear-file">×</span>
-        </div>
-        <div id="crop-container">
-            <div class="crop-viewport" id="crop-viewport">
-                <img id="crop-image" class="crop-image" />
-            </div>
-            <div class="zoom-controls">
-                <div class="zoom-slider" id="zoom-slider">
-                    <div class="zoom-slider-track" id="zoom-track"></div>
-                    <div class="zoom-slider-thumb" id="zoom-thumb"></div>
+        <h1>Update Firmware</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                    </svg>
                 </div>
+                <label for="firmware" class="file-input-label">Select File</label>
+                <input type="file" id="firmware" name="firmware" class="file-input" accept=".bin">
             </div>
-        </div>
-        <button id="crop-button" class="button hidden">Upload Badge</button>
+            <div class="file-info" id="file-info">
+                <span id="file-name"></span>
+                <span id="clear-file">×</span>
+            </div>
+            <input type="submit" id="update-button" value="Update Firmware" class="button hidden">
+        </form>
     </div>
 
     <script src="./assets/js/main.js"></script>
-    <script src="./assets/js/upload.js"></script>
-</body>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const firmware = document.getElementById('firmware');
+            const fileNameDisplay = document.getElementById('file-name');
+            const uploadArea = document.getElementById('upload-area');
+            const fileInfo = document.getElementById('file-info');
+            const clearFile = document.getElementById('clear-file');
+            const updateButton = document.getElementById('update-button');
 
+            // Add drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                uploadArea.style.borderColor = '#ffffff';
+                uploadArea.style.background = 'rgba(255, 255, 255, 0.4)';
+            }
+
+            function unhighlight(e) {
+                uploadArea.style.borderColor = '#ffffff';
+                uploadArea.style.background = 'rgba(255, 255, 255, 0.2)';
+            }
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+
+            firmware.addEventListener('change', function(e) {
+                handleFiles(e.target.files);
+            });
+
+            function handleFiles(files) {
+                const file = files[0];
+                if (file && file.name.endsWith('.bin')) {
+                    fileNameDisplay.textContent = file.name;
+                    uploadArea.classList.add('hidden');
+                    fileInfo.classList.add('active');
+                    updateButton.classList.remove('hidden');
+                }
+            }
+
+            clearFile.addEventListener('click', function() {
+                location.reload();
+            });
+
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Check device connection before uploading
+                if (!device.isConnected) {
+                    showError('Device not connected. Please check your DraftBuddy connection.');
+                    return;
+                }
+                
+                const overlay = showOverlay('Updating Firmware', 'Your device will restart in a few moments');
+
+                var formData = new FormData(this);
+                
+                // Use device.apiCall for consistent error handling
+                fetch('http://draftbuddy.local/update', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    hideOverlay();
+                    if (response.ok) {
+                        showUpdateSuccess();
+                    } else {
+                        showError('Failed to update firmware');
+                    }
+                }).catch(error => {
+                    console.error('Error updating firmware:', error);
+                    hideOverlay();
+                    showError('Connection failed. Please check your device.');
+                });
+            });
+
+            function showUpdateSuccess() {
+                const container = document.querySelector('.container');
+                container.innerHTML = `
+                    <div class="update-message">
+                        <div class="update-icon">
+                            <span style="font-size: 34px; line-height: 1; color: white;">⟳</span>
+                        </div>
+                        <h1>Your device is updating and<br>will restart in a few moments</h1>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
 </html>
