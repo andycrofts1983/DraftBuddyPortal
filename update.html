@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DraftBuddy - Upload TapBadge</title>
+    <link rel="icon" type="image/x-icon" href="./assets/images/favicon.ico">
+    <link rel="stylesheet" href="./assets/css/shared.css">
+    <style>
+        .upload-area {
+            border: 3px dashed var(--white);
+            border-radius: 20px;
+            padding: 60px 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .upload-area:hover {
+            border-color: var(--white);
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            background: #f8f8f8;
+        }
+
+        .upload-icon:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+        }
+
+        .upload-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: var(--dark-gray);
+        }
+
+        .file-input-label {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--darker-gray) 100%);
+            color: var(--white);
+            padding: 14px 32px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, var(--darker-gray) 0%, #222 100%);
+        }
+
+        .file-input-label:active {
+            transform: translateY(0);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            display: none;
+            background: #eed46f;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .file-info.active {
+            display: flex;
+        }
+
+        #file-name {
+            font-size: 14px;
+            color: var(--dark-gray);
+            font-weight: 500;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #clear-file {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--darker-gray) 100%);
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            line-height: 1;
+            padding-bottom: 4px;
+        }
+
+        #clear-file:hover {
+            background: linear-gradient(135deg, var(--darker-gray) 0%, #222 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        #clear-file:active {
+            transform: translateY(0);
+        }
+
+        /* Custom Crop Container */
+        #crop-container {
+            margin: 30px 0;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px var(--shadow);
+            animation: fadeIn 0.4s ease-out;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            display: none;
+        }
+
+        #crop-container.active {
+            display: block;
+        }
+
+        .crop-viewport {
+            width: 330px;
+            height: 330px;
+            margin: 0 auto;
+            position: relative;
+            border: 6px solid #000;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+            cursor: move;
+        }
+
+        .crop-image {
+            position: absolute;
+            max-width: none;
+            max-height: none;
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: none;
+            left: 0;
+            top: 0;
+        }
+
+        .zoom-controls {
+            margin-top: 20px;
+            background: transparent;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-slider {
+            width: 200px;
+            height: 6px;
+            background: #666666;
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .zoom-slider-track {
+            height: 100%;
+            background: var(--dark-gray);
+            border-radius: 3px;
+            transition: width 0.1s ease;
+        }
+
+        .zoom-slider-thumb {
+            width: 38px;
+            height: 38px;
+            background: var(--white);
+            border: 2px solid var(--dark-gray);
+            border-radius: 50%;
+            position: absolute;
+            top: -16px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .zoom-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .crop-viewport {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="logo">
+        <a href="./">
+            <img src="./assets/images/logo.png" alt="DraftBuddy Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjY1IiBoZWlnaHQ9IjgwIiB2aWV3Qm94PSIwIDAgMjY1IDgwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyNjUiIGhlaWdodD0iODAiIGZpbGw9IiNFNkMxMzEiIHJ4PSI4Ii8+PHRleHQgeD0iMTMyLjUiIHk9IjQ1IiBmaWxsPSIjNGE0YTRhIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjcwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RHJhZnRCdWRkeTwvdGV4dD48L3N2Zz4='">
+        </a>
+        <div id="connection-status" class="status checking">Checking connection...</div>
+    </div>
+    
+    <div class="tab-container">
+        <a href="./upload.html" class="tab active">Upload</a>
+        <a href="./gallery.html" class="tab">Gallery</a>
+    </div>
+    
+    <div class="container">
+        <h1>Upload Tap Badge Image</h1>
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon" id="upload-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                </svg>
+            </div>
+            <label for="upload" class="file-input-label">Choose Image</label>
+            <input type="file" id="upload" class="file-input" accept="image/*">
+        </div>
+        <div class="file-info" id="file-info">
+            <span id="file-name"></span>
+            <span id="clear-file">×</span>
+        </div>
+        <div id="crop-container">
+            <div class="crop-viewport" id="crop-viewport">
+                <img id="crop-image" class="crop-image" />
+            </div>
+            <div class="zoom-controls">
+                <div class="zoom-slider" id="zoom-slider">
+                    <div class="zoom-slider-track" id="zoom-track"></div>
+                    <div class="zoom-slider-thumb" id="zoom-thumb"></div>
+                </div>
+            </div>
+        </div>
+        <button id="crop-button" class="button hidden">Upload Badge</button>
+    </div>
+
+    <script src="./assets/js/main.js"></script>
+    <script src="./assets/js/upload.js"></script>
+</body>
+
+</html>
